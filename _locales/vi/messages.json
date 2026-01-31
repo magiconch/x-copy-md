@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "Sao chép tweet X sang Markdown"
+  },
+  "extensionDescription": {
+    "message": "Sao chép tweet X (Twitter) sang Markdown."
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "Sao chép tweet sang Markdown"
+  },
+  "popup_title": {
+    "message": "Sao chép tweet X sang Markdown"
+  },
+  "popup_subtitle": {
+    "message": "Cài đặt"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C sao chép tweet sang Markdown"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Nhấn Ctrl/Cmd+C để sao chép tweet dưới con trỏ thành Markdown."
+  },
+  "popup_useLocalImages_label": {
+    "message": "Dùng ảnh cục bộ"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "Tải ảnh về máy và dán liên kết ảnh cục bộ."
+  },
+  "popup_status_saved": {
+    "message": "Đã lưu"
+  }
+}

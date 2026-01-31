@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>X Copy MD</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div class="title" data-i18n="popup_title">X Copy Tweet as Markdown</div>
+      <div class="subtitle" data-i18n="popup_subtitle">Settings</div>
+    </header>
+
+    <main>
+      <label class="row">
+        <input id="autoMarkdownCopy" type="checkbox" />
+        <span>
+          <div class="label" data-i18n="popup_autoMarkdownCopy_label">
+            Ctrl/Cmd+C copies tweet as Markdown
+          </div>
+          <div class="hint" data-i18n="popup_autoMarkdownCopy_hint">Only when no text is selected</div>
+        </span>
+      </label>
+
+      <label class="row">
+        <input id="useLocalImages" type="checkbox" />
+        <span>
+          <div class="label" data-i18n="popup_useLocalImages_label">Use local images</div>
+          <div class="hint" data-i18n="popup_useLocalImages_hint">
+            Download main tweet images to Downloads/X-Copy
+          </div>
+        </span>
+      </label>
+
+      <div id="status" class="status" aria-live="polite"></div>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

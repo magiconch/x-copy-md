@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "X-Tweets als Markdown kopieren"
+  },
+  "extensionDescription": {
+    "message": "Kopiert X (Twitter)-Tweets als Markdown."
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "Tweet als Markdown kopieren"
+  },
+  "popup_title": {
+    "message": "X-Tweet als Markdown kopieren"
+  },
+  "popup_subtitle": {
+    "message": "Einstellungen"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C kopiert den Tweet als Markdown"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Drücke Ctrl/Cmd+C, um den Tweet unter dem Cursor als Markdown zu kopieren."
+  },
+  "popup_useLocalImages_label": {
+    "message": "Lokale Bilder verwenden"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "Lädt Bilder herunter und fügt lokale Bildlinks ein."
+  },
+  "popup_status_saved": {
+    "message": "Gespeichert"
+  }
+}

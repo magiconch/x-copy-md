@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "X 复制推文为 Markdown"
+  },
+  "extensionDescription": {
+    "message": "将 X（Twitter）推文复制为 Markdown。"
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "复制推文为 Markdown"
+  },
+  "popup_title": {
+    "message": "X 复制推文为 Markdown"
+  },
+  "popup_subtitle": {
+    "message": "设置"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C 复制推文为 Markdown"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "按 Ctrl/Cmd+C 时，复制鼠标所在推文为 Markdown。"
+  },
+  "popup_useLocalImages_label": {
+    "message": "使用本地图片"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "将图片下载到本地，并在 Markdown 中使用本地图片链接。"
+  },
+  "popup_status_saved": {
+    "message": "已保存"
+  }
+}

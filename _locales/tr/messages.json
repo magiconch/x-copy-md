@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "X tweetini Markdown olarak kopyala"
+  },
+  "extensionDescription": {
+    "message": "X (Twitter) tweetlerini Markdown olarak kopyalar."
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "Tweeti Markdown olarak kopyala"
+  },
+  "popup_title": {
+    "message": "X tweetini Markdown olarak kopyala"
+  },
+  "popup_subtitle": {
+    "message": "Ayarlar"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C tweeti Markdown olarak kopyalar"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Ctrl/Cmd+C ile imlecin altındaki tweet'i Markdown olarak kopyalayın."
+  },
+  "popup_useLocalImages_label": {
+    "message": "Yerel görselleri kullan"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "Görselleri bilgisayarınıza indirir ve yerel görsel bağlantıları ekler."
+  },
+  "popup_status_saved": {
+    "message": "Kaydedildi"
+  }
+}

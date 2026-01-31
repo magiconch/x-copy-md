@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "X ट्वीट को Markdown में कॉपी करें"
+  },
+  "extensionDescription": {
+    "message": "X (Twitter) के ट्वीट्स को Markdown में कॉपी करता है।"
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "ट्वीट को Markdown में कॉपी करें"
+  },
+  "popup_title": {
+    "message": "X ट्वीट को Markdown में कॉपी करें"
+  },
+  "popup_subtitle": {
+    "message": "सेटिंग्स"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C से ट्वीट Markdown में कॉपी होता है"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Ctrl/Cmd+C दबाकर कर्सर के नीचे वाले ट्वीट को Markdown में कॉपी करें।"
+  },
+  "popup_useLocalImages_label": {
+    "message": "लोकल इमेज का उपयोग करें"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "इमेज को कंप्यूटर पर डाउनलोड करके लोकल इमेज लिंक पेस्ट करें।"
+  },
+  "popup_status_saved": {
+    "message": "सहेजा गया"
+  }
+}

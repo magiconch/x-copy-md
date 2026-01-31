@@ -1,0 +1,33 @@
+{
+  "extensionName": {
+    "message": "نسخ تغريدة X كـ Markdown"
+  },
+  "extensionDescription": {
+    "message": "ينسخ تغريدات X (Twitter) بصيغة Markdown."
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "نسخ التغريدة كـ Markdown"
+  },
+  "popup_title": {
+    "message": "نسخ تغريدة X كـ Markdown"
+  },
+  "popup_subtitle": {
+    "message": "الإعدادات"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C ينسخ التغريدة بصيغة Markdown"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "اضغط Ctrl/Cmd+C لنسخ التغريدة تحت المؤشر بصيغة Markdown."
+  },
+  "popup_useLocalImages_label": {
+    "message": "استخدام صور محلية"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "ينزّل الصور إلى جهازك ويلصق روابط صور محلية."
+  },
+  "popup_status_saved": {
+    "message": "تم الحفظ"
+  }
+}
+

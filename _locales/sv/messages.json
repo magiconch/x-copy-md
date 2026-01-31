@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "Kopiera X-inlägg som Markdown"
+  },
+  "extensionDescription": {
+    "message": "Kopierar X (Twitter)-inlägg som Markdown."
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "Kopiera inlägg som Markdown"
+  },
+  "popup_title": {
+    "message": "Kopiera X-inlägg som Markdown"
+  },
+  "popup_subtitle": {
+    "message": "Inställningar"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C kopierar inlägg som Markdown"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Tryck Ctrl/Cmd+C för att kopiera inlägget under markören som Markdown."
+  },
+  "popup_useLocalImages_label": {
+    "message": "Använd lokala bilder"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "Ladda ner bilder lokalt och klistra in lokala bildlänkar."
+  },
+  "popup_status_saved": {
+    "message": "Sparat"
+  }
+}

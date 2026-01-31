@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "X ツイートをMarkdownとしてコピー"
+  },
+  "extensionDescription": {
+    "message": "X（Twitter）のツイートをMarkdownとしてコピーします。"
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "ツイートをMarkdownとしてコピー"
+  },
+  "popup_title": {
+    "message": "X ツイートをMarkdownとしてコピー"
+  },
+  "popup_subtitle": {
+    "message": "設定"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+CでツイートをMarkdownとしてコピー"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Ctrl/Cmd+Cでカーソル下のツイートをMarkdownでコピーします。"
+  },
+  "popup_useLocalImages_label": {
+    "message": "ローカル画像を使用"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "画像をローカルに保存し、Markdownにはローカル画像リンクを貼ります。"
+  },
+  "popup_status_saved": {
+    "message": "保存しました"
+  }
+}

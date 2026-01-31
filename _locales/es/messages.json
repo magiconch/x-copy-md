@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "Copiar tuit de X en Markdown"
+  },
+  "extensionDescription": {
+    "message": "Copia tuits de X (Twitter) en Markdown."
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "Copiar tuit en Markdown"
+  },
+  "popup_title": {
+    "message": "Copiar tuit de X en Markdown"
+  },
+  "popup_subtitle": {
+    "message": "Ajustes"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C copia el tuit en Markdown"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Pulsa Ctrl/Cmd+C para copiar el tuit bajo el cursor en Markdown."
+  },
+  "popup_useLocalImages_label": {
+    "message": "Usar imágenes locales"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "Descarga las imágenes en tu equipo y pega enlaces de imagen locales."
+  },
+  "popup_status_saved": {
+    "message": "Guardado"
+  }
+}

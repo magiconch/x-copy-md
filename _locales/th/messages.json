@@ -1,0 +1,33 @@
+{
+  "extensionName": {
+    "message": "คัดลอกทวีต X เป็น Markdown"
+  },
+  "extensionDescription": {
+    "message": "คัดลอกทวีตจาก X (Twitter) เป็น Markdown"
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "คัดลอกทวีตเป็น Markdown"
+  },
+  "popup_title": {
+    "message": "คัดลอกทวีต X เป็น Markdown"
+  },
+  "popup_subtitle": {
+    "message": "การตั้งค่า"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C คัดลอกทวีตเป็น Markdown"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "กด Ctrl/Cmd+C เพื่อคัดลอกทวีตใต้เคอร์เซอร์เป็น Markdown"
+  },
+  "popup_useLocalImages_label": {
+    "message": "ใช้รูปภาพในเครื่อง"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "ดาวน์โหลดรูปภาพลงเครื่องและแปะลิงก์รูปภาพแบบในเครื่อง"
+  },
+  "popup_status_saved": {
+    "message": "บันทึกแล้ว"
+  }
+}
+

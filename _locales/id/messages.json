@@ -1,0 +1,33 @@
+{
+  "extensionName": {
+    "message": "Salin tweet X sebagai Markdown"
+  },
+  "extensionDescription": {
+    "message": "Salin tweet X (Twitter) sebagai Markdown."
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "Salin tweet sebagai Markdown"
+  },
+  "popup_title": {
+    "message": "Salin tweet X sebagai Markdown"
+  },
+  "popup_subtitle": {
+    "message": "Pengaturan"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C menyalin tweet sebagai Markdown"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Tekan Ctrl/Cmd+C untuk menyalin tweet di bawah kursor sebagai Markdown."
+  },
+  "popup_useLocalImages_label": {
+    "message": "Gunakan gambar lokal"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "Unduh gambar ke komputer Anda dan tempel tautan gambar lokal."
+  },
+  "popup_status_saved": {
+    "message": "Tersimpan"
+  }
+}
+

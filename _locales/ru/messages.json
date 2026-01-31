@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "Копировать твит X в Markdown"
+  },
+  "extensionDescription": {
+    "message": "Копирует твиты X (Twitter) в Markdown."
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "Копировать твит в Markdown"
+  },
+  "popup_title": {
+    "message": "Копировать твит X в Markdown"
+  },
+  "popup_subtitle": {
+    "message": "Настройки"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C копирует твит в Markdown"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Нажмите Ctrl/Cmd+C, чтобы скопировать твит под курсором в Markdown."
+  },
+  "popup_useLocalImages_label": {
+    "message": "Использовать локальные изображения"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "Скачивает изображения на компьютер и вставляет локальные ссылки на изображения."
+  },
+  "popup_status_saved": {
+    "message": "Сохранено"
+  }
+}

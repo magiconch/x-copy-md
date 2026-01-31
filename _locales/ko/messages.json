@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "X 트윗을 Markdown으로 복사"
+  },
+  "extensionDescription": {
+    "message": "X(Twitter) 트윗을 Markdown으로 복사합니다."
+  },
+  "contextMenu_copyAsMarkdown": {
+    "message": "트윗을 Markdown으로 복사"
+  },
+  "popup_title": {
+    "message": "X 트윗을 Markdown으로 복사"
+  },
+  "popup_subtitle": {
+    "message": "설정"
+  },
+  "popup_autoMarkdownCopy_label": {
+    "message": "Ctrl/Cmd+C로 트윗을 Markdown으로 복사"
+  },
+  "popup_autoMarkdownCopy_hint": {
+    "message": "Ctrl/Cmd+C를 누르면 커서 아래의 트윗을 Markdown으로 복사합니다."
+  },
+  "popup_useLocalImages_label": {
+    "message": "로컬 이미지 사용"
+  },
+  "popup_useLocalImages_hint": {
+    "message": "이미지를 로컬에 저장하고 Markdown에 로컬 이미지 링크를 넣습니다."
+  },
+  "popup_status_saved": {
+    "message": "저장됨"
+  }
+}
