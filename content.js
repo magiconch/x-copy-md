@@ -321,6 +321,8 @@ function extractXArticleTitle(doc, richEl) {
 
   // Some layouts may not use <h1> for the title; try a few common hooks.
   for (const sel of [
+    // Observed on some locales: title lives here.
+    '[data-testid="twitter-article-title"]',
     '[data-testid="articleTitle"]',
     '[data-testid="longformTitle"]',
     '[data-testid="article-title"]'
