@@ -416,10 +416,25 @@ function nodeToInlineMarkdown(node, { bold = false, code = false } = {}) {
 
   const el = node;
   const tag = String(el.tagName || "").toUpperCase();
+
+  // X sometimes renders emoji as non-text elements with role="img" and an aria-label.
+  // Prefer the actual glyph when present; otherwise fall back to the label so we don't drop it.
+  if (tag !== "IMG" && String(el.getAttribute?.("role") || "").toLowerCase() === "img") {
+    const aria = String(el.getAttribute?.("aria-label") || "").trim();
+    const title = String(el.getAttribute?.("title") || "").trim();
+    if (aria) return aria;
+    if (title) return title;
+  }
+
   // Preserve author-inserted newlines (X uses <br> for hard line breaks).
   if (tag === "BR") return "\n";
   // X sometimes renders emojis as <img alt="..."> in the tweet text.
-  if (tag === "IMG") return String(el.getAttribute?.("alt") || "");
+  if (tag === "IMG") {
+    const alt = String(el.getAttribute?.("alt") || "").trim();
+    const aria = String(el.getAttribute?.("aria-label") || "").trim();
+    const title = String(el.getAttribute?.("title") || "").trim();
+    return alt || aria || title;
+  }
 
   const nextBold = bold || isBoldElement(el);
   const nextCode = code || isInlineCodeElement(el);
