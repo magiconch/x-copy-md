@@ -1,17 +1,26 @@
 # X Copy Tweet as Markdown
 
-Chrome/Edge/Brave extension that adds a right-click menu item on x.com/twitter.com:
+**Save Twitter/X tweets to Obsidian with one click!**
 
-- **Copy tweet as Markdown**
+A Chrome/Edge/Brave browser extension that lets you easily copy Twitter/X tweets as Markdown format, perfectly compatible with Obsidian note-taking system.
 
-Markdown format:
+## Core Features
+
+- **Right-click to copy tweets as Markdown** - Right-click on any tweet on x.com/twitter.com to copy
+- **Perfect for Obsidian** - Generated Markdown can be pasted directly into Obsidian notes
+- **Local image storage** - Automatically downloads tweet images locally for perfect display in Obsidian
+- **Keyboard shortcut support** - Optional Ctrl/Cmd+C quick copy
+
+## Markdown Format Examples
+
+Basic tweet format:
 ```md
 <tweet text>
 
 — @username (https://x.com/username/status/1234567890)
 ```
 
-If the tweet has images, they are downloaded to `Downloads/X-Copy/` and inserted as local file URLs:
+Tweet with images (images automatically downloaded locally for offline viewing in Obsidian):
 ```md
 <tweet text>
 
@@ -20,7 +29,7 @@ If the tweet has images, they are downloaded to `Downloads/X-Copy/` and inserted
 — @username (https://x.com/username/status/1234567890)
 ```
 
-If the tweet contains a quoted/forwarded tweet, the quoted content is separated and blockquoted, and the quoted tweet link is included:
+Tweet with quoted content:
 ```md
 <main tweet text>
 
@@ -33,35 +42,48 @@ If the tweet contains a quoted/forwarded tweet, the quoted content is separated 
 — @username (https://x.com/username/status/1234567890)
 ```
 
-Note: Only the main tweet's images are downloaded to `Downloads/X-Copy/`. Quoted tweet images (if any) remain as remote URLs inside the blockquote.
+**Note**: Only the main tweet's images are downloaded to the `Downloads/X-Copy/` directory. Quoted tweet images (if any) remain as remote URLs.
 
-## Install (unpacked)
+## Why Perfect for Obsidian?
 
-1. Open `chrome://extensions`
+- ✅ **Native Markdown format** - No conversion needed, paste directly into Obsidian
+- ✅ **Local image storage** - Images saved locally, notes remain accessible forever
+- ✅ **Preserves tweet links** - Easy to trace back to original source
+- ✅ **Clear quote formatting** - Quoted tweets use blockquotes for clear hierarchy
+
+## Installation (Developer Mode)
+
+1. Open `chrome://extensions` (Chrome) or `edge://extensions` (Edge)
 2. Enable **Developer mode**
 3. Click **Load unpacked**
 4. Select the `x-copy-md/` folder
 
-## Use
+## How to Use
 
-1. Go to `https://x.com/` (or `https://twitter.com/`)
-2. Right-click inside a tweet
-3. Choose **Copy tweet as Markdown**
+1. Visit `https://x.com/` (or `https://twitter.com/`)
+2. Right-click on a tweet
+3. Select **Copy tweet as Markdown**
+4. Open Obsidian and paste into your note
 
-## Popup settings
+## Extension Settings
 
-Click the extension icon to open the popup:
+Click the extension icon to open the settings panel:
 
 - **Ctrl/Cmd+C copies tweet as Markdown**
-  - When enabled, pressing `Ctrl/Cmd+C` copies the tweet under your cursor as Markdown.
-  - If you selected text, default copy behavior is preserved (only selection is copied).
+  - When enabled, pressing `Ctrl/Cmd+C` copies the tweet under your cursor as Markdown
+  - If you have text selected, default copy behavior is preserved (only selection is copied)
 - **Use local images**
-  - When enabled, images in the **main tweet** are downloaded to `~/Downloads/X-Copy/` and the Markdown uses `file://...` URLs.
-  - When disabled, images use remote `https://pbs.twimg.com/...` URLs and no downloads occur.
+  - When enabled, **main tweet** images are downloaded to `~/Downloads/X-Copy/`, Markdown uses `file://...` local paths
+  - When disabled, images use remote `https://pbs.twimg.com/...` URLs and no downloads occur
 
 ## Troubleshooting
 
-- If it says "No tweet article found": right-click on the tweet body (not the sidebar / empty space).
-- If it says "Tweet link not found": X DOM may have changed; open an issue and include a screenshot + the tweet URL.
-- If images don’t render in your Markdown app: some renderers block `file://` images for security.
-- Quoted/retweeted content: this extension tries to copy only the main tweet's own text/images (not nested quoted tweet media).
+- **"No tweet article found" error**: Right-click on the tweet body (not the sidebar or empty space)
+- **"Tweet link not found" error**: X/Twitter DOM structure may have changed; please open an issue with a screenshot and tweet URL
+- **Images don't render in Markdown app**: Some renderers block `file://` images for security reasons
+  - **Obsidian users**: Obsidian supports local images by default, just ensure the image path is correct
+- **Quoted/retweeted content**: This extension copies only the main tweet's text and images (not nested quoted tweet media)
+
+---
+
+**Start using it now and save your favorite Twitter content permanently in Obsidian!** 📝✨
