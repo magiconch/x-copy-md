@@ -7,6 +7,7 @@ const {
   buildTweetMarkdownFromBlocks,
   filenameToFileUrl,
   inferImageExt,
+  cleanXTitle,
   blockquoteMarkdown
 } = require("./format");
 
@@ -39,6 +40,17 @@ test("filenameToFileUrl: mac path -> file url", () => {
 test("inferImageExt: pbs format param", () => {
   const ext = inferImageExt("https://pbs.twimg.com/media/abc?format=png&name=small");
   assert.equal(ext, "png");
+});
+
+test("cleanXTitle: strips X suffixes", () => {
+  assert.equal(cleanXTitle("Hello | X"), "Hello");
+  assert.equal(cleanXTitle("Hello / X"), "Hello");
+  assert.equal(cleanXTitle("Hello on X"), "Hello");
+});
+
+test("cleanXTitle: strips author prefixes like 'alice on X: ...'", () => {
+  assert.equal(cleanXTitle("alice on X: Some Title | X"), "Some Title");
+  assert.equal(cleanXTitle("@alice on X: Some Title"), "Some Title");
 });
 
 test("buildTweetMarkdownFromBlocks: interleaves", () => {

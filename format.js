@@ -52,6 +52,39 @@ function inferImageExt(url) {
   return "jpg";
 }
 
+function cleanXTitle(raw) {
+  let t = String(raw ?? "").replace(/\s+/g, " ").trim();
+  if (!t) return "";
+
+  // Strip common suffixes.
+  t = t.replace(/\s+\|\s+X$/i, "");
+  t = t.replace(/\s+\/\s+X$/i, "");
+  t = t.replace(/\s+on\s+X$/i, "");
+
+  // X page titles frequently include an author prefix.
+  // Examples:
+  // - "alice on X: Some Title"
+  // - "@alice on X: Some Title"
+  // - "alice ( @alice ) on X: Some Title"
+  t = t.replace(
+    /^(.+?)\s+on\s+X:\s*/i,
+    ""
+  );
+
+  // Some surfaces use "X: Title".
+  t = t.replace(/^X:\s*/i, "");
+
+  // Trim matching wrapping quotes (English or CJK).
+  // Note: CJK quotes are asymmetric (“ … ”), so handle explicitly.
+  const qm =
+    t.match(/^"(.*)"$/) ||
+    t.match(/^'(.*)'$/) ||
+    t.match(/^“(.*)”$/);
+  if (qm) t = String(qm[1] ?? "").trim();
+
+  return t.trim();
+}
+
 function buildTweetMarkdownFromBlocks({ blocks, username, url }) {
   const safeUser = String(username ?? "").replace(/^@/, "");
   const safeUrl = String(url ?? "");
@@ -93,6 +126,7 @@ if (typeof module !== "undefined" && module.exports) {
     buildTweetMarkdownFromBlocks,
     filenameToFileUrl,
     inferImageExt,
+    cleanXTitle,
     blockquoteMarkdown
   };
 }
@@ -105,6 +139,7 @@ if (typeof globalThis !== "undefined") {
     buildTweetMarkdownFromBlocks,
     filenameToFileUrl,
     inferImageExt,
+    cleanXTitle,
     blockquoteMarkdown
   };
 }

@@ -110,6 +110,21 @@ function findQuoteRoot(article, mainTweetId) {
   );
   if (marked) return marked;
 
+  // Some X variants don't expose a stable data-testid on the quote card, but they do
+  // render it as a clickable "card" (often role=link) containing a status link that
+  // isn't the main tweet.
+  for (const card of Array.from(article.querySelectorAll('[role="link"]'))) {
+    const hasText = Boolean(card.querySelector('div[data-testid="tweetText"]'));
+    if (!hasText) continue;
+    if (hasStatusLinkToId(card, mainTweetId)) continue;
+    const links = Array.from(card.querySelectorAll('a[href*="/status/"]'));
+    const other = links.find((a) => {
+      const id = statusIdFromHref(a.getAttribute("href"));
+      return id && id !== mainTweetId;
+    });
+    if (other) return card;
+  }
+
   // Fallback: locate the quoted tweet's time link, then walk up to a container
   // that contains quoted content but not the main tweet link.
   const quotedTimeLink = findFirstStatusTimeLink(article, (a) => {
@@ -182,11 +197,20 @@ function extractTweetPermalink(article) {
 
 function extractQuotedTweetPermalink(quoteRoot, mainTweetId) {
   if (!quoteRoot) return null;
-  const a = findFirstStatusTimeLink(quoteRoot, (a0) => {
+  const aTime = findFirstStatusTimeLink(quoteRoot, (a0) => {
     const id = statusIdFromHref(a0.getAttribute("href"));
     return id && id !== mainTweetId;
   });
-  const href = a?.getAttribute?.("href");
+
+  let href = aTime?.getAttribute?.("href") || "";
+  if (!href) {
+    const a = Array.from(quoteRoot.querySelectorAll('a[href*="/status/"]')).find((a0) => {
+      const id = statusIdFromHref(a0.getAttribute("href"));
+      return id && id !== mainTweetId;
+    });
+    href = a?.getAttribute?.("href") || "";
+  }
+
   if (!href) return null;
   try {
     return new URL(href, window.location.href).toString();
@@ -256,12 +280,17 @@ function isXArticleHref(href) {
 }
 
 function cleanXTitle(raw) {
+  const fn = globalThis.XCopyMd?.cleanXTitle;
+  if (typeof fn === "function") return fn(raw);
+
+  // Fallback (shouldn't happen because manifest loads format.js before content.js).
   let t = String(raw ?? "").replace(/\s+/g, " ").trim();
   if (!t) return "";
-  // Common suffixes.
   t = t.replace(/\s+\|\s+X$/i, "");
   t = t.replace(/\s+\/\s+X$/i, "");
   t = t.replace(/\s+on\s+X$/i, "");
+  t = t.replace(/^(.+?)\s+on\s+X:\s*/i, "");
+  t = t.replace(/^X:\s*/i, "");
   return t.trim();
 }
 
@@ -271,6 +300,16 @@ function extractXArticleTitle(doc, richEl) {
     richEl?.closest?.('main[role="main"],main,article,div[role="main"]') || doc?.body || null;
 
   const candidates = [];
+
+  // Prefer metadata first. On X, visible headings can be ambiguous (UI chrome, nav, author),
+  // while og/twitter titles are usually the canonical long-form title.
+  for (const metaSel of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+    const m = doc.querySelector(metaSel);
+    const text = cleanXTitle(m?.getAttribute?.("content"));
+    if (text) candidates.push(text);
+  }
+
+  // Visible title near rich text.
   if (container) {
     for (const el of Array.from(container.querySelectorAll("h1"))) {
       if (isBoilerplateContainer(el)) continue;
@@ -283,20 +322,12 @@ function extractXArticleTitle(doc, richEl) {
   for (const sel of [
     '[data-testid="articleTitle"]',
     '[data-testid="longformTitle"]',
-    '[data-testid="article-title"]',
-    'header [role="heading"]'
+    '[data-testid="article-title"]'
   ]) {
     const el = doc.querySelector(sel);
     if (!el) continue;
     if (isBoilerplateContainer(el)) continue;
     const text = cleanXTitle(el.textContent);
-    if (text) candidates.push(text);
-  }
-
-  // Fall back to metadata.
-  for (const metaSel of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
-    const m = doc.querySelector(metaSel);
-    const text = cleanXTitle(m?.getAttribute?.("content"));
     if (text) candidates.push(text);
   }
 
@@ -654,14 +685,18 @@ async function fetchXArticleBlocks(articleUrl) {
   return null;
 }
 
-function extractOrderedBlocks(rootEl, mainTweetId, { excludeRoot = null, mode = "main" } = {}) {
+function extractOrderedBlocks(
+  rootEl,
+  mainTweetId,
+  { excludeRoot = null, mode = "main", assumeAllInRoot = false } = {}
+) {
   const items = [];
 
   // Text blocks.
   for (const el of rootEl.querySelectorAll('div[data-testid="tweetText"]')) {
     if (excludeRoot && excludeRoot.contains(el)) continue;
     if (mode === "main" && !isInMainTweetContent(el, mainTweetId)) continue;
-    if (mode === "quoted" && !isInQuotedTweetContent(el, mainTweetId)) continue;
+    if (mode === "quoted" && !assumeAllInRoot && !isInQuotedTweetContent(el, mainTweetId)) continue;
     const text = extractTweetTextMarkdown(el);
     if (!text) continue;
     items.push({ el, block: { type: "text", text } });
@@ -671,7 +706,7 @@ function extractOrderedBlocks(rootEl, mainTweetId, { excludeRoot = null, mode = 
   for (const img of rootEl.querySelectorAll('div[data-testid="tweetPhoto"] img')) {
     if (excludeRoot && excludeRoot.contains(img)) continue;
     if (mode === "main" && !isInMainTweetContent(img, mainTweetId)) continue;
-    if (mode === "quoted" && !isInQuotedTweetContent(img, mainTweetId)) continue;
+    if (mode === "quoted" && !assumeAllInRoot && !isInQuotedTweetContent(img, mainTweetId)) continue;
     const src = img.currentSrc || img.src;
     if (!src) continue;
     const url = normalizePbsImageUrl(src);
@@ -779,7 +814,9 @@ async function copyTweetAsMarkdownFromArticle(article) {
 
   const quotedUrl = extractQuotedTweetPermalink(quoteRoot, parsed.id);
   const quotedParsed = quotedUrl ? globalThis.XCopyMd?.parseTweetUrl?.(quotedUrl) : null;
-  const quotedBlocks = quoteRoot ? extractOrderedBlocks(quoteRoot, parsed.id, { mode: "quoted" }) : [];
+  const quotedBlocks = quoteRoot ?
+    extractOrderedBlocks(quoteRoot, parsed.id, { mode: "quoted", assumeAllInRoot: true }) :
+    [];
 
   // Detect X long-form articles and attempt to fetch the article page for the full body.
   let articleUrl = extractXArticleUrlFromTweetArticle(article, parsed);
