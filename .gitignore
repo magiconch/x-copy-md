@@ -5,3 +5,5 @@
 # Chrome build/cache artifacts (if any)
 *.crx
 
+tools
+
