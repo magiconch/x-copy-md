@@ -53,6 +53,11 @@ test("cleanXTitle: strips author prefixes like 'alice on X: ...'", () => {
   assert.equal(cleanXTitle("@alice on X: Some Title"), "Some Title");
 });
 
+test("cleanXTitle: strips localized author prefixes like 'alice 在 X 上：...'", () => {
+  assert.equal(cleanXTitle("alice 在 X 上：Some Title | X"), "Some Title");
+  assert.equal(cleanXTitle("alice在X上: Some Title"), "Some Title");
+});
+
 test("buildTweetMarkdownFromBlocks: interleaves", () => {
   const md = buildTweetMarkdownFromBlocks({
     blocks: [

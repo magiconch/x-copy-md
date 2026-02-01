@@ -66,13 +66,15 @@ function cleanXTitle(raw) {
   // - "alice on X: Some Title"
   // - "@alice on X: Some Title"
   // - "alice ( @alice ) on X: Some Title"
-  t = t.replace(
-    /^(.+?)\s+on\s+X:\s*/i,
-    ""
-  );
+  t = t.replace(/^(.+?)\s+on\s+X\s*[:：]\s*/i, "");
+
+  // Localized variants (seen on some locales):
+  // - "alice 在 X 上：Some Title"
+  // - "alice在X上: Some Title"
+  t = t.replace(/^(.+?)\s*在\s*X\s*上\s*[:：]\s*/i, "");
 
   // Some surfaces use "X: Title".
-  t = t.replace(/^X:\s*/i, "");
+  t = t.replace(/^X\s*[:：]\s*/i, "");
 
   // Trim matching wrapping quotes (English or CJK).
   // Note: CJK quotes are asymmetric (“ … ”), so handle explicitly.

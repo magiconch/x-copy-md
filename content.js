@@ -290,7 +290,8 @@ function cleanXTitle(raw) {
   t = t.replace(/\s+\/\s+X$/i, "");
   t = t.replace(/\s+on\s+X$/i, "");
   t = t.replace(/^(.+?)\s+on\s+X:\s*/i, "");
-  t = t.replace(/^X:\s*/i, "");
+  t = t.replace(/^(.+?)\s*在\s*X\s*上\s*[:：]\s*/i, "");
+  t = t.replace(/^X\s*[:：]\s*/i, "");
   return t.trim();
 }
 
