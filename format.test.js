@@ -9,7 +9,7 @@ const {
   inferImageExt,
   cleanXTitle,
   blockquoteMarkdown
-} = require("./format");
+} = require("./dist/extension/format");
 
 test("parseTweetUrl: extracts username and canonical url", () => {
   const out = parseTweetUrl("https://x.com/someone/status/1234567890");
