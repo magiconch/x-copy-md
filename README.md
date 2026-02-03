@@ -56,7 +56,8 @@ Tweet with quoted content:
 1. Open `chrome://extensions` (Chrome) or `edge://extensions` (Edge)
 2. Enable **Developer mode**
 3. Click **Load unpacked**
-4. Select the `x-copy-md/` folder
+4. Run `npm run build`
+5. Select the `dist/extension/` folder
 
 ## How to Use
 
