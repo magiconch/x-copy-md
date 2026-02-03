@@ -5,10 +5,9 @@
     "build": "npm run build:ts && npm run build:static",
     "build:ts": "tsc -p tsconfig.json",
     "build:static": "node scripts/copy-static.mjs",
-    "test": "node --test"
+    "test": "npm run build && node --test"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
   }
 }
-
