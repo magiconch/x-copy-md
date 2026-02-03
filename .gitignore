@@ -2,6 +2,8 @@
 .idea/
 .vscode/
 .worktrees/
+node_modules/
+dist/extension/
 
 # Chrome build/cache artifacts (if any)
 *.crx
