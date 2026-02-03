@@ -1,68 +1,68 @@
 // @ts-nocheck
-// Content script: captures right-click location, extracts tweet data, writes Markdown to clipboard.
+// Content script: captures right-click location, extracts tweet/article data, writes Markdown to clipboard.
 
 (() => {
+  // -------------------- State + settings
+  const SETTINGS_DEFAULTS = {
+    autoMarkdownCopy: false,
+    useLocalImages: true
+  };
 
-const SETTINGS_DEFAULTS = {
-  autoMarkdownCopy: false,
-  useLocalImages: true
-};
+  /**
+   * Keep state in one place so event handlers always read the same closure values.
+   * This also fixes the previous scope bug where `lastPointer` was referenced outside
+   * its defining IIFE.
+   */
+  type PointerState = { x: number | null; y: number | null; target: EventTarget | null };
+  const state = {
+    settings: { ...SETTINGS_DEFAULTS },
+    lastContextMenuTarget: null as EventTarget | null,
+    lastPointer: { x: null, y: null, target: null } as PointerState
+  };
 
-let settings = { ...SETTINGS_DEFAULTS };
-
-function loadSettings() {
-  try {
-    chrome.storage?.sync?.get(SETTINGS_DEFAULTS, (res) => {
-      if (chrome.runtime.lastError) return;
-      settings = { ...settings, ...res };
-    });
-  } catch {
-    // ignore
-  }
-}
-
-try {
-  chrome.storage?.onChanged?.addListener((changes, area) => {
-    if (area !== "sync") return;
-    for (const [k, v] of Object.entries(changes || {})) {
-      settings[k] = v?.newValue;
+  function loadSettings() {
+    try {
+      chrome.storage?.sync?.get(SETTINGS_DEFAULTS, (res) => {
+        if (chrome.runtime.lastError) return;
+        state.settings = { ...state.settings, ...res };
+      });
+    } catch {
+      // ignore
     }
-  });
-} catch {
-  // ignore
-}
+  }
 
-loadSettings();
+  function installSettingsSync() {
+    try {
+      chrome.storage?.onChanged?.addListener((changes, area) => {
+        if (area !== "sync") return;
+        for (const [k, v] of Object.entries(changes || {})) {
+          state.settings[k] = v?.newValue;
+        }
+      });
+    } catch {
+      // ignore
+    }
+  }
 
-let lastContextMenuTarget = null;
-let lastPointer = { x: null, y: null, target: null };
+  function setLastPointer(e) {
+    state.lastPointer = { x: e.clientX, y: e.clientY, target: e.target };
+  }
 
-document.addEventListener(
-  "contextmenu",
-  (e) => {
-    lastContextMenuTarget = e.target;
-  },
-  true
-);
+  installSettingsSync();
+  loadSettings();
 
-})();
+  document.addEventListener(
+    "contextmenu",
+    (e) => {
+      state.lastContextMenuTarget = e.target;
+    },
+    true
+  );
 
-document.addEventListener(
-  "mousemove",
-  (e) => {
-    lastPointer = { x: e.clientX, y: e.clientY, target: e.target };
-  },
-  true
-);
+  document.addEventListener("mousemove", setLastPointer, true);
+  document.addEventListener("pointerdown", setLastPointer, true);
 
-document.addEventListener(
-  "pointerdown",
-  (e) => {
-    lastPointer = { x: e.clientX, y: e.clientY, target: e.target };
-  },
-  true
-);
-
+// -------------------- DOM helpers (X/Twitter heuristics)
 function closestArticle(el) {
   if (!el || typeof el.closest !== "function") return null;
   return el.closest("article");
@@ -273,6 +273,7 @@ function parseXStatusOrArticleUrl(inputUrl) {
   return { username: m[1], kind: m[2], id: m[3], url: u.toString() };
 }
 
+// -------------------- X Article extraction
 function isBoilerplateContainer(el) {
   // Heuristic: skip common non-content areas when extracting long-form article text.
   return Boolean(el?.closest?.("nav,header,footer,aside,form"));
@@ -354,6 +355,7 @@ function extractXArticleTitle(doc, richEl) {
   return "";
 }
 
+// -------------------- Markdown extraction helpers
 function wrapBoldMarkdown(s) {
   const m = String(s ?? "").match(/^(\s*)(.*?)(\s*)$/s);
   if (!m) return `**${String(s ?? "")}**`;
@@ -756,6 +758,7 @@ function extractOrderedBlocks(
   return blocks;
 }
 
+// -------------------- Chrome messaging + clipboard
 function sendMessage(msg) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(msg, (resp) => {
@@ -787,6 +790,7 @@ async function writeClipboardText(text) {
   if (!ok) throw new Error("execCommand(copy) failed");
 }
 
+// -------------------- UI toast
 function toast(message, { position = "left", durationMs = 1800, onClick = null, title = "" } = {}) {
   const el = document.createElement("div");
   el.textContent = message;
@@ -825,6 +829,7 @@ function isEditableTarget(el) {
   return false;
 }
 
+// -------------------- Copy flows
 async function copyTweetAsMarkdownFromArticle(article) {
   const url = extractTweetPermalink(article);
   if (!url) throw new Error("Tweet link not found.");
@@ -869,7 +874,7 @@ async function copyTweetAsMarkdownFromArticle(article) {
   if (!mainBlocks.length && !quotedBlocks.length) throw new Error("Tweet content not found.");
 
   // Only download images from the main tweet (not the quoted tweet), and only when enabled.
-  if (Boolean(settings.useLocalImages)) {
+  if (Boolean(state.settings.useLocalImages)) {
     const mainImageBlocks = mainBlocks.filter((b) => b.type === "image");
     if (mainImageBlocks.length) toast(`Downloading ${mainImageBlocks.length} image(s)...`);
 
@@ -952,7 +957,7 @@ async function copyXArticleAsMarkdownFromDocument() {
   if (!blocks.length) throw new Error("Article content not found.");
 
   // Download images from the article when enabled.
-  if (Boolean(settings.useLocalImages)) {
+  if (Boolean(state.settings.useLocalImages)) {
     const imageBlocks = blocks.filter((b) => b.type === "image");
     if (imageBlocks.length) toast(`Downloading ${imageBlocks.length} image(s)...`);
 
@@ -992,65 +997,67 @@ async function copyXArticleAsMarkdownFromDocument() {
   toast("Copied");
 }
 
+// -------------------- Entrypoints (runtime message + keydown)
+async function handleCopyRequestFromRuntime() {
+  const currentUrl = canonicalizeUrl(window.location.href);
+  if (currentUrl && isXArticleHref(currentUrl)) {
+    await copyXArticleAsMarkdownFromDocument();
+    return;
+  }
+
+  const article = closestArticle(state.lastContextMenuTarget) || closestArticle(document.activeElement);
+  if (!article) throw new Error("No tweet article found. Try right-clicking directly on the tweet.");
+  await copyTweetAsMarkdownFromArticle(article);
+}
+
 chrome.runtime.onMessage.addListener((msg) => {
   if (!msg || msg.type !== "X_COPY_MD_COPY_TWEET") return;
-
-  (async () => {
-    const currentUrl = canonicalizeUrl(window.location.href);
-    if (currentUrl && isXArticleHref(currentUrl)) {
-      await copyXArticleAsMarkdownFromDocument();
-      return;
-    }
-
-    const article = closestArticle(lastContextMenuTarget) || closestArticle(document.activeElement);
-    if (!article) throw new Error("No tweet article found. Try right-clicking directly on the tweet.");
-    await copyTweetAsMarkdownFromArticle(article);
-  })().catch((err) => {
+  handleCopyRequestFromRuntime().catch((err) => {
     toast(`Copy failed: ${err?.message || String(err)}`);
   });
 });
 
-document.addEventListener(
-  "keydown",
-  (e) => {
-    if (!settings.autoMarkdownCopy) return;
-    if (e.defaultPrevented) return;
-    if (e.altKey) return;
-    const isCopy = (e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C");
-    if (!isCopy) return;
+function handleAutoCopyKeydown(e) {
+  if (!state.settings.autoMarkdownCopy) return;
+  if (e.defaultPrevented) return;
+  if (e.altKey) return;
+  const isCopy = (e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C");
+  if (!isCopy) return;
 
-    const sel = window.getSelection?.();
-    const hasSelection = Boolean(sel && String(sel).trim());
-    if (hasSelection) return; // preserve default copy
-    if (isEditableTarget(document.activeElement)) return;
+  const sel = window.getSelection?.();
+  const hasSelection = Boolean(sel && String(sel).trim());
+  if (hasSelection) return; // preserve default copy
+  if (isEditableTarget(document.activeElement)) return;
 
-    e.preventDefault();
-    e.stopImmediatePropagation();
+  e.preventDefault();
+  e.stopImmediatePropagation();
 
-    const el =
-      lastPointer.target ||
-      (typeof lastPointer.x === "number" && typeof lastPointer.y === "number"
-        ? document.elementFromPoint(lastPointer.x, lastPointer.y)
-        : null) ||
-      document.activeElement;
+  const el =
+    state.lastPointer.target ||
+    (typeof state.lastPointer.x === "number" && typeof state.lastPointer.y === "number"
+      ? document.elementFromPoint(state.lastPointer.x, state.lastPointer.y)
+      : null) ||
+    document.activeElement;
 
-    const currentUrl = canonicalizeUrl(window.location.href);
-    if (currentUrl && isXArticleHref(currentUrl)) {
-      copyXArticleAsMarkdownFromDocument().catch((err) => {
-        toast(`Copy failed: ${err?.message || String(err)}`);
-      });
-      return;
-    }
-
-    const article = closestArticle(el);
-    if (!article) {
-      toast("Copy failed: no tweet found under cursor");
-      return;
-    }
-
-    copyTweetAsMarkdownFromArticle(article).catch((err) => {
+  const currentUrl = canonicalizeUrl(window.location.href);
+  if (currentUrl && isXArticleHref(currentUrl)) {
+    copyXArticleAsMarkdownFromDocument().catch((err) => {
       toast(`Copy failed: ${err?.message || String(err)}`);
     });
-  },
-  true
-);
+    return;
+  }
+
+  const article = closestArticle(el);
+  if (!article) {
+    toast("Copy failed: no tweet found under cursor");
+    return;
+  }
+
+  copyTweetAsMarkdownFromArticle(article).catch((err) => {
+    toast(`Copy failed: ${err?.message || String(err)}`);
+  });
+}
+
+document.addEventListener("keydown", handleAutoCopyKeydown, true);
+
+})();
