@@ -3,6 +3,7 @@
 // Keep this file "script-style" (no ESM imports/exports) so compiled output works
 // as classic extension scripts and can still be `require()`'d by Node tests.
 
+(() => {
 type ParsedTweetUrl = { username: string; id: string; url: string };
 
 type TweetBlock =
@@ -159,3 +160,4 @@ if (typeof globalThis !== "undefined") {
   };
 }
 
+})();
