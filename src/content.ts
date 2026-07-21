@@ -2,9 +2,13 @@
 // Content script: captures right-click location, extracts tweet/article data, writes Markdown to clipboard.
 
 (() => {
+  // Note: shortcut.js is a separate compiled file (from src/shortcut.ts). It's safe to
+  // rely on it if it exists; otherwise we fall back to legacy Ctrl/Cmd+C behavior.
+
   // -------------------- State + settings
   const SETTINGS_DEFAULTS = {
     autoMarkdownCopy: false,
+    defaultSaveMarkdownFile: false,
     useLocalImages: true
   };
 
@@ -193,6 +197,21 @@ function extractTweetPermalink(article) {
 
   const href = link?.getAttribute?.("href");
   if (!href) return null;
+
+  // X sometimes uses reserved /i/... routes (e.g. /i/web/status/...) for time links,
+  // which our URL parser intentionally ignores. If possible, find the public
+  // /:user/status/:id permalink for this same tweet id within the same <article>.
+  const statusId = statusIdFromHref(href);
+  if (statusId && globalThis.XCopyMd?.selectCanonicalStatusUrl) {
+    const hrefs = Array.from(article.querySelectorAll('a[href*="/status/"]')).map((a) => a.getAttribute("href"));
+    const picked = globalThis.XCopyMd.selectCanonicalStatusUrl({
+      hrefs,
+      baseUrl: window.location.href,
+      statusId
+    });
+    if (picked) return picked;
+  }
+
   try {
     return new URL(href, window.location.href).toString();
   } catch {
@@ -308,11 +327,17 @@ function extractXArticleTitle(doc, richEl) {
 
   const candidates = [];
 
-  // Prefer metadata first. On X, visible headings can be ambiguous (UI chrome, nav, author),
-  // while og/twitter titles are usually the canonical long-form title.
-  for (const metaSel of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
-    const m = doc.querySelector(metaSel);
-    const text = cleanXTitle(m?.getAttribute?.("content"));
+  // The read view exposes a dedicated title hook. Prefer it over metadata: X often
+  // serves the unhelpful literal value "X" in og:title and document.title.
+  for (const sel of [
+    '[data-testid="twitter-article-title"]',
+    '[data-testid="articleTitle"]',
+    '[data-testid="longformTitle"]',
+    '[data-testid="article-title"]'
+  ]) {
+    const el = doc.querySelector(sel);
+    if (!el || isBoilerplateContainer(el)) continue;
+    const text = cleanXTitle(el.textContent);
     if (text) candidates.push(text);
   }
 
@@ -325,18 +350,9 @@ function extractXArticleTitle(doc, richEl) {
     }
   }
 
-  // Some layouts may not use <h1> for the title; try a few common hooks.
-  for (const sel of [
-    // Observed on some locales: title lives here.
-    '[data-testid="twitter-article-title"]',
-    '[data-testid="articleTitle"]',
-    '[data-testid="longformTitle"]',
-    '[data-testid="article-title"]'
-  ]) {
-    const el = doc.querySelector(sel);
-    if (!el) continue;
-    if (isBoilerplateContainer(el)) continue;
-    const text = cleanXTitle(el.textContent);
+  for (const metaSel of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+    const m = doc.querySelector(metaSel);
+    const text = cleanXTitle(m?.getAttribute?.("content"));
     if (text) candidates.push(text);
   }
 
@@ -348,6 +364,7 @@ function extractXArticleTitle(doc, richEl) {
   for (const t of candidates) {
     if (!t) continue;
     const key = t.toLowerCase();
+    if (key === "x") continue;
     if (seen.has(key)) continue;
     seen.add(key);
     return t;
@@ -364,6 +381,26 @@ function wrapBoldMarkdown(s) {
   const trail = m[3] || "";
   if (!core) return String(s ?? "");
   return `${lead}**${core}**${trail}`;
+}
+
+function wrapItalicMarkdown(s) {
+  const m = String(s ?? "").match(/^(\s*)(.*?)(\s*)$/s);
+  if (!m) return `*${String(s ?? "")}*`;
+  const lead = m[1] || "";
+  const core = m[2] || "";
+  const trail = m[3] || "";
+  if (!core) return String(s ?? "");
+  return `${lead}*${core}*${trail}`;
+}
+
+function wrapStrikethroughMarkdown(s) {
+  const m = String(s ?? "").match(/^(\s*)(.*?)(\s*)$/s);
+  if (!m) return `~~${String(s ?? "")}~~`;
+  const lead = m[1] || "";
+  const core = m[2] || "";
+  const trail = m[3] || "";
+  if (!core) return String(s ?? "");
+  return `${lead}~~${core}~~${trail}`;
 }
 
 function maxBacktickRun(s) {
@@ -419,7 +456,43 @@ function isInlineCodeElement(el) {
   return /font-family\s*:\s*monospace/i.test(style);
 }
 
-function nodeToInlineMarkdown(node, { bold = false, code = false } = {}) {
+function isItalicElement(el) {
+  if (!el || el.nodeType !== 1) return false;
+  const tag = String(el.tagName || "").toUpperCase();
+  if (tag === "I" || tag === "EM") return true;
+  const style = String(el.getAttribute?.("style") || "");
+  return /font-style\s*:\s*italic/i.test(style);
+}
+
+function isStrikethroughElement(el) {
+  if (!el || el.nodeType !== 1) return false;
+  const tag = String(el.tagName || "").toUpperCase();
+  if (tag === "S" || tag === "STRIKE" || tag === "DEL") return true;
+  const style = String(el.getAttribute?.("style") || "");
+  return /text-decoration(?:-line)?\s*:[^;]*line-through/i.test(style);
+}
+
+function markdownHref(el) {
+  const raw = String(el?.getAttribute?.("href") || "").trim();
+  if (!raw || /^javascript:/i.test(raw)) return "";
+  try {
+    return new URL(raw, window.location.href).toString();
+  } catch {
+    return raw;
+  }
+}
+
+function nodeToInlineMarkdown(
+  node,
+  {
+    bold = false,
+    italic = false,
+    strike = false,
+    code = false,
+    links = false,
+    includeImageAlt = true
+  } = {}
+) {
   if (!node) return "";
   if (node.nodeType === 3) return String(node.nodeValue || "");
   if (node.nodeType !== 1) return "";
@@ -440,6 +513,7 @@ function nodeToInlineMarkdown(node, { bold = false, code = false } = {}) {
   if (tag === "BR") return "\n";
   // X sometimes renders emojis as <img alt="..."> in the tweet text.
   if (tag === "IMG") {
+    if (!includeImageAlt) return "";
     const alt = String(el.getAttribute?.("alt") || "").trim();
     const aria = String(el.getAttribute?.("aria-label") || "").trim();
     const title = String(el.getAttribute?.("title") || "").trim();
@@ -447,17 +521,34 @@ function nodeToInlineMarkdown(node, { bold = false, code = false } = {}) {
   }
 
   const nextBold = bold || isBoldElement(el);
+  const nextItalic = italic || isItalicElement(el);
+  const nextStrike = strike || isStrikethroughElement(el);
   const nextCode = code || isInlineCodeElement(el);
   let s = "";
   for (const child of Array.from(el.childNodes || [])) {
     // Inline code should not contain newlines.
-    s += nodeToInlineMarkdown(child, { bold: nextBold, code: nextCode });
+    s += nodeToInlineMarkdown(child, {
+      bold: nextBold,
+      italic: nextItalic,
+      strike: nextStrike,
+      code: nextCode,
+      links,
+      includeImageAlt
+    });
   }
 
   if (nextCode && !code) return wrapInlineCodeMarkdown(s.replace(/\s*\n\s*/g, " ").trim());
 
-  // Only wrap at the point bold turns on, to avoid nested **...**.
-  if (nextBold && !bold) return wrapBoldMarkdown(s);
+  // Only wrap at the point a style turns on, avoiding nested Markdown delimiters.
+  if (nextStrike && !strike) s = wrapStrikethroughMarkdown(s);
+  if (nextItalic && !italic) s = wrapItalicMarkdown(s);
+  if (nextBold && !bold) s = wrapBoldMarkdown(s);
+
+  if (links && tag === "A") {
+    const href = markdownHref(el);
+    const label = String(s || href).trim();
+    if (href && label) return `[${label}](${href})`;
+  }
   return s;
 }
 
@@ -525,7 +616,7 @@ function extractXArticleBlocksFromDocument(doc) {
     const title = extractXArticleTitle(doc, rich);
     if (title) items.push({ el: rich, block: { type: "text", text: `# ${title}` } });
 
-    // Draft.js blocks (treat each block as a paragraph).
+    // Draft.js blocks retain semantic tags/classes for headings, lists and quotes.
     const blocks = Array.from(rich.querySelectorAll('[data-block="true"]'));
     for (const b of blocks) {
       // Draft.js "code-block" often renders as <pre ... class="public-DraftStyleDefault-pre">...
@@ -550,21 +641,37 @@ function extractXArticleBlocksFromDocument(doc) {
         continue;
       }
 
-      const raw = nodeToInlineMarkdown(b);
-      const text = String(raw).replace(/\s+/g, " ").trim();
+      const raw = nodeToInlineMarkdown(b, { links: true, includeImageAlt: false });
+      const formatBlock = globalThis.XCopyMd?.formatArticleTextBlock;
+      const text =
+        typeof formatBlock === "function"
+          ? formatBlock({
+              tagName: b.tagName,
+              className: cls,
+              parentTagName: b.parentElement?.tagName,
+              text: raw
+            })
+          : String(raw).replace(/\s+/g, " ").trim();
       if (!text) continue;
       items.push({ el: b, block: { type: "text", text } });
     }
 
-    // Images near the rich text area (article content).
-    const rootForImages =
-      rich.closest?.('main[role="main"],main,article,div[role="main"]') || doc.body || rich;
-    for (const img of Array.from(rootForImages.querySelectorAll("img"))) {
+    // Only images embedded in the rich-text body belong to the article Markdown.
+    // Searching the surrounding read view also captures the cover/banner and both
+    // author avatars, which must never be downloaded.
+    for (const img of Array.from(rich.querySelectorAll("img"))) {
       if (isBoilerplateContainer(img)) continue;
       const src = img.currentSrc || img.src || img.getAttribute("src");
       if (!src) continue;
       const url = normalizePbsImageUrl(src);
-      if (!String(url).includes("twimg.com")) continue;
+      let isArticleMedia = false;
+      try {
+        const u = new URL(String(url), window.location.href);
+        isArticleMedia = u.hostname === "pbs.twimg.com" && u.pathname.startsWith("/media/");
+      } catch {
+        // ignore malformed image URLs
+      }
+      if (!isArticleMedia) continue;
       items.push({ el: img, block: { type: "image", url } });
     }
 
@@ -634,6 +741,7 @@ function extractXArticleBlocksFromDocument(doc) {
   if (!rootEl) return [];
 
   const items = [];
+  const contentElements = [];
 
   // Text-ish blocks: headings, paragraphs, list items.
   for (const el of rootEl.querySelectorAll("h1,h2,h3,p,li")) {
@@ -660,17 +768,28 @@ function extractXArticleBlocksFromDocument(doc) {
     else if (tag === "H3") mdText = `### ${text}`;
     else if (tag === "LI") mdText = `- ${text}`;
     items.push({ el, block: { type: "text", text: mdText } });
+    contentElements.push(el);
   }
 
   // Images inside the article content.
+  const firstContentEl = contentElements[0] || null;
+  const lastContentEl = contentElements[contentElements.length - 1] || null;
   for (const img of rootEl.querySelectorAll("img")) {
     if (isBoilerplateContainer(img)) continue;
+    // Covers and author cards live before/after the prose inside broad fallback roots.
+    if (firstContentEl && compareDomOrder(img, firstContentEl) < 0) continue;
+    if (lastContentEl && compareDomOrder(img, lastContentEl) > 0) continue;
     const src = img.currentSrc || img.src || img.getAttribute("src");
     if (!src) continue;
-    // X-hosted media is usually on pbs.twimg.com.
     const url = normalizePbsImageUrl(src);
-    if (!url) continue;
-    if (!String(url).includes("twimg.com")) continue;
+    let isArticleMedia = false;
+    try {
+      const u = new URL(String(url), window.location.href);
+      isArticleMedia = u.hostname === "pbs.twimg.com" && u.pathname.startsWith("/media/");
+    } catch {
+      // ignore malformed image URLs
+    }
+    if (!isArticleMedia) continue;
     items.push({ el: img, block: { type: "image", url } });
   }
 
@@ -830,7 +949,7 @@ function isEditableTarget(el) {
 }
 
 // -------------------- Copy flows
-async function copyTweetAsMarkdownFromArticle(article) {
+async function buildTweetMarkdownBundleFromArticle(article, { quiet = false } = {}) {
   const url = extractTweetPermalink(article);
   if (!url) throw new Error("Tweet link not found.");
 
@@ -842,9 +961,9 @@ async function copyTweetAsMarkdownFromArticle(article) {
 
   const quotedUrl = extractQuotedTweetPermalink(quoteRoot, parsed.id);
   const quotedParsed = quotedUrl ? globalThis.XCopyMd?.parseTweetUrl?.(quotedUrl) : null;
-  const quotedBlocks = quoteRoot ?
-    extractOrderedBlocks(quoteRoot, parsed.id, { mode: "quoted", assumeAllInRoot: true }) :
-    [];
+  const quotedBlocks = quoteRoot
+    ? extractOrderedBlocks(quoteRoot, parsed.id, { mode: "quoted", assumeAllInRoot: true })
+    : [];
 
   // Detect X long-form articles and attempt to fetch the article page for the full body.
   let articleUrl = extractXArticleUrlFromTweetArticle(article, parsed);
@@ -868,7 +987,7 @@ async function copyTweetAsMarkdownFromArticle(article) {
       title: openUrl,
       onClick: () => window.location.assign(openUrl)
     });
-    return;
+    return null;
   }
 
   if (!mainBlocks.length && !quotedBlocks.length) throw new Error("Tweet content not found.");
@@ -876,7 +995,7 @@ async function copyTweetAsMarkdownFromArticle(article) {
   // Only download images from the main tweet (not the quoted tweet), and only when enabled.
   if (Boolean(state.settings.useLocalImages)) {
     const mainImageBlocks = mainBlocks.filter((b) => b.type === "image");
-    if (mainImageBlocks.length) toast(`Downloading ${mainImageBlocks.length} image(s)...`);
+    if (!quiet && mainImageBlocks.length) toast(`Downloading ${mainImageBlocks.length} image(s)...`);
 
     // Build a deduped download request by URL to avoid double downloads.
     const seen = new Set();
@@ -941,11 +1060,111 @@ async function copyTweetAsMarkdownFromArticle(article) {
     });
   }
 
+  const rawLeadText =
+    (mainBlocks || []).find((b) => b && b.type === "text" && String(b.text ?? "").trim())?.text || "";
+
+  return { md, parsed, rawLeadText };
+}
+
+async function copyTweetAsMarkdownFromArticle(article, { output = "clipboard" } = {}) {
+  const bundle = await buildTweetMarkdownBundleFromArticle(article);
+  if (!bundle) return;
+  const { md, parsed, rawLeadText } = bundle;
+
+  if (output === "download") {
+    const lead = globalThis.XCopyMd?.filenameSnippet?.(rawLeadText, 60) || "";
+    const base = [`@${parsed.username}`, parsed.id, lead].filter(Boolean).join("-");
+    const resp = await sendMessage({
+      type: "X_COPY_MD_SAVE_MARKDOWN_FILE",
+      baseFilename: base,
+      markdown: md
+    });
+    if (!resp?.ok) throw new Error(resp?.error || "Save failed");
+    toast("Saved", { title: resp?.filename || resp?.fileUrl || "" });
+    return;
+  }
+
   await writeClipboardText(md);
   toast("Copied");
 }
 
-async function copyXArticleAsMarkdownFromDocument() {
+async function copyThreadAsMarkdownFromDocumentFromRoot({ rootUsername, rootId, output = "clipboard" }) {
+  const username = String(rootUsername ?? "").replace(/^@/, "");
+  const id = String(rootId ?? "");
+  if (!username || !id) throw new Error("Missing root tweet info.");
+
+  const main = document.querySelector('main[role="main"]') || document.body;
+  const articles = Array.from(main.querySelectorAll("article"));
+
+  const candidates = [];
+  for (const a of articles) {
+    const u = extractTweetPermalink(a);
+    if (!u) continue;
+    const p = globalThis.XCopyMd?.parseTweetUrl?.(u);
+    if (!p?.username || !p?.id) continue;
+    candidates.push({ article: a, username: p.username, id: p.id, url: p.url });
+  }
+
+  const ids =
+    globalThis.XCopyMdThread?.selectThreadTweetIds?.(candidates, { username, rootId: id }) || [];
+
+  // If we can't build a real thread, let caller fall back to single-tweet.
+  if (ids.length <= 1) return null;
+
+  // De-dupe by id and keep first article occurrence.
+  const byId = new Map();
+  for (const c of candidates) {
+    if (!byId.has(c.id)) byId.set(c.id, c);
+  }
+
+  const items = [];
+  let totalImages = 0;
+  for (const tid of ids) {
+    const hit = byId.get(tid);
+    if (!hit?.article) continue;
+    try {
+      // Estimate images for a single user-visible toast.
+      if (Boolean(state.settings.useLocalImages)) {
+        const mainBlocks = extractOrderedBlocks(hit.article, tid, { mode: "main" });
+        totalImages += (mainBlocks || []).filter((b) => b && b.type === "image").length;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  if (Boolean(state.settings.useLocalImages) && totalImages) toast(`Downloading ${totalImages} image(s)...`);
+
+  for (const tid of ids) {
+    const hit = byId.get(tid);
+    if (!hit?.article) continue;
+    const bundle = await buildTweetMarkdownBundleFromArticle(hit.article, { quiet: true });
+    if (!bundle?.md) continue;
+    items.push({ id: tid, url: hit.url, md: bundle.md, rawLeadText: bundle.rawLeadText });
+  }
+
+  if (!items.length) return null;
+
+  const threadMd = globalThis.XCopyMdThread?.buildThreadMarkdown?.(items) || items.map((it) => it.md).join("\n\n---\n\n");
+
+  if (output === "download") {
+    const lead = globalThis.XCopyMd?.filenameSnippet?.(items[0]?.rawLeadText, 60) || "";
+    const base = [`@${username}`, id, lead].filter(Boolean).join("-");
+    const resp = await sendMessage({
+      type: "X_COPY_MD_SAVE_MARKDOWN_FILE",
+      baseFilename: base,
+      markdown: threadMd
+    });
+    if (!resp?.ok) throw new Error(resp?.error || "Save failed");
+    toast("Saved", { title: resp?.filename || resp?.fileUrl || "" });
+    return { count: items.length };
+  }
+
+  await writeClipboardText(threadMd);
+  toast("Copied");
+  return { count: items.length };
+}
+
+async function copyXArticleAsMarkdownFromDocument({ output = "clipboard" } = {}) {
   const currentUrl = canonicalizeUrl(window.location.href);
   if (!currentUrl || !isXArticleHref(currentUrl)) throw new Error("Not on an X Article page.");
 
@@ -993,6 +1212,21 @@ async function copyXArticleAsMarkdownFromDocument() {
     url: currentUrl
   });
 
+  if (output === "download") {
+    const title = globalThis.XCopyMd?.cleanXTitle?.(document.title) || "";
+    const slug = globalThis.XCopyMd?.filenameSnippet?.(title, 80) || "";
+    const prefix = username ? `@${username}` : "article";
+    const base = [prefix, id || "unknown", slug].filter(Boolean).join("-");
+    const resp = await sendMessage({
+      type: "X_COPY_MD_SAVE_MARKDOWN_FILE",
+      baseFilename: base,
+      markdown: md
+    });
+    if (!resp?.ok) throw new Error(resp?.error || "Save failed");
+    toast("Saved", { title: resp?.filename || resp?.fileUrl || "" });
+    return;
+  }
+
   await writeClipboardText(md);
   toast("Copied");
 }
@@ -1007,27 +1241,95 @@ async function handleCopyRequestFromRuntime() {
 
   const article = closestArticle(state.lastContextMenuTarget) || closestArticle(document.activeElement);
   if (!article) throw new Error("No tweet article found. Try right-clicking directly on the tweet.");
+
+  // On /status/<id> pages, attempt to copy the contiguous self-reply thread rooted
+  // at the clicked tweet. Replies in other users' conversation branches are excluded.
+  const parsedPage = currentUrl ? parseXStatusOrArticleUrl(currentUrl) : null;
+  if (parsedPage?.kind === "status") {
+    const u = extractTweetPermalink(article);
+    const p = globalThis.XCopyMd?.parseTweetUrl?.(u);
+    if (p?.username && p?.id) {
+      const res = await copyThreadAsMarkdownFromDocumentFromRoot({
+        rootUsername: p.username,
+        rootId: p.id,
+        output: "clipboard"
+      });
+      if (res) return;
+    }
+  }
+
   await copyTweetAsMarkdownFromArticle(article);
 }
 
+async function handleSaveRequestFromRuntime() {
+  const currentUrl = canonicalizeUrl(window.location.href);
+  if (currentUrl && isXArticleHref(currentUrl)) {
+    await copyXArticleAsMarkdownFromDocument({ output: "download" });
+    return;
+  }
+
+  const article = closestArticle(state.lastContextMenuTarget) || closestArticle(document.activeElement);
+  if (!article) throw new Error("No tweet article found. Try right-clicking directly on the tweet.");
+
+  // On /status/<id> pages, attempt to save the contiguous self-reply thread rooted
+  // at the clicked tweet. Replies in other users' conversation branches are excluded.
+  const parsedPage = currentUrl ? parseXStatusOrArticleUrl(currentUrl) : null;
+  if (parsedPage?.kind === "status") {
+    const u = extractTweetPermalink(article);
+    const p = globalThis.XCopyMd?.parseTweetUrl?.(u);
+    if (p?.username && p?.id) {
+      const res = await copyThreadAsMarkdownFromDocumentFromRoot({
+        rootUsername: p.username,
+        rootId: p.id,
+        output: "download"
+      });
+      if (res) return;
+    }
+  }
+
+  await copyTweetAsMarkdownFromArticle(article, { output: "download" });
+}
+
 chrome.runtime.onMessage.addListener((msg) => {
-  if (!msg || msg.type !== "X_COPY_MD_COPY_TWEET") return;
-  handleCopyRequestFromRuntime().catch((err) => {
-    toast(`Copy failed: ${err?.message || String(err)}`);
-  });
+  if (!msg) return;
+  if (msg.type === "X_COPY_MD_COPY_TWEET") {
+    handleCopyRequestFromRuntime().catch((err) => {
+      toast(`Copy failed: ${err?.message || String(err)}`);
+    });
+    return;
+  }
+  if (msg.type === "X_COPY_MD_SAVE_TWEET_MD") {
+    handleSaveRequestFromRuntime().catch((err) => {
+      toast(`Save failed: ${err?.message || String(err)}`);
+    });
+  }
 });
 
 function handleAutoCopyKeydown(e) {
   if (!state.settings.autoMarkdownCopy) return;
   if (e.defaultPrevented) return;
-  if (e.altKey) return;
-  const isCopy = (e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C");
-  if (!isCopy) return;
 
   const sel = window.getSelection?.();
   const hasSelection = Boolean(sel && String(sel).trim());
-  if (hasSelection) return; // preserve default copy
-  if (isEditableTarget(document.activeElement)) return;
+  const isEditable = isEditableTarget(document.activeElement);
+
+  const action =
+    globalThis.XCopyMdShortcut?.resolveShortcutAction?.({
+      autoMarkdownCopy: state.settings.autoMarkdownCopy,
+      defaultSaveMarkdownFile: state.settings.defaultSaveMarkdownFile,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      altKey: e.altKey,
+      key: e.key,
+      hasSelection,
+      isEditable
+    }) ||
+    // Back-compat fallback: if shortcut helper isn't present, keep Ctrl/Cmd+C behavior.
+    ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C") && !e.altKey && !hasSelection && !isEditable
+      ? "copy"
+      : null);
+
+  if (!action) return;
 
   e.preventDefault();
   e.stopImmediatePropagation();
@@ -1040,21 +1342,44 @@ function handleAutoCopyKeydown(e) {
     document.activeElement;
 
   const currentUrl = canonicalizeUrl(window.location.href);
+  const output = action === "save" ? "download" : "clipboard";
   if (currentUrl && isXArticleHref(currentUrl)) {
-    copyXArticleAsMarkdownFromDocument().catch((err) => {
-      toast(`Copy failed: ${err?.message || String(err)}`);
+    copyXArticleAsMarkdownFromDocument({ output }).catch((err) => {
+      toast(`${action === "save" ? "Save" : "Copy"} failed: ${err?.message || String(err)}`);
     });
     return;
   }
 
   const article = closestArticle(el);
   if (!article) {
-    toast("Copy failed: no tweet found under cursor");
+    toast(`${action === "save" ? "Save" : "Copy"} failed: no tweet found under cursor`);
     return;
   }
 
-  copyTweetAsMarkdownFromArticle(article).catch((err) => {
-    toast(`Copy failed: ${err?.message || String(err)}`);
+  // On /status/<id> pages, attempt the contiguous self-reply thread rooted at the
+  // tweet under the cursor.
+  const parsedPage = currentUrl ? parseXStatusOrArticleUrl(currentUrl) : null;
+  if (parsedPage?.kind === "status") {
+    const u = extractTweetPermalink(article);
+    const p = globalThis.XCopyMd?.parseTweetUrl?.(u);
+    if (p?.username && p?.id) {
+      (async () => {
+        const res = await copyThreadAsMarkdownFromDocumentFromRoot({
+          rootUsername: p.username,
+          rootId: p.id,
+          output
+        });
+        if (res) return;
+        await copyTweetAsMarkdownFromArticle(article, { output });
+      })().catch((err) => {
+        toast(`${action === "save" ? "Save" : "Copy"} failed: ${err?.message || String(err)}`);
+      });
+      return;
+    }
+  }
+
+  copyTweetAsMarkdownFromArticle(article, { output }).catch((err) => {
+    toast(`${action === "save" ? "Save" : "Copy"} failed: ${err?.message || String(err)}`);
   });
 }
 

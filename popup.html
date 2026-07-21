@@ -17,9 +17,23 @@
         <input id="autoMarkdownCopy" type="checkbox" />
         <span>
           <div class="label" data-i18n="popup_autoMarkdownCopy_label">
-            Ctrl/Cmd+C copies tweet as Markdown
+            Shortcut: Ctrl/Cmd+C (copy) / Ctrl/Cmd+S (save)
           </div>
-          <div class="hint" data-i18n="popup_autoMarkdownCopy_hint">Only when no text is selected</div>
+          <div class="hint" data-i18n="popup_autoMarkdownCopy_hint">
+            Uses Ctrl/Cmd+C for copy, Ctrl/Cmd+S for save (depends on default action)
+          </div>
+        </span>
+      </label>
+
+      <label class="row">
+        <input id="defaultSaveMarkdownFile" type="checkbox" />
+        <span>
+          <div class="label" data-i18n="popup_defaultSaveMarkdownFile_label">
+            Default action: save as .md (Downloads)
+          </div>
+          <div class="hint" data-i18n="popup_defaultSaveMarkdownFile_hint">
+            When enabled, the main action saves a .md file instead of copying to clipboard.
+          </div>
         </span>
       </label>
 
@@ -28,7 +42,7 @@
         <span>
           <div class="label" data-i18n="popup_useLocalImages_label">Use local images</div>
           <div class="hint" data-i18n="popup_useLocalImages_hint">
-            Download main tweet images to Downloads/X-Copy
+            Download main tweet images to Downloads/X-Copy/img
           </div>
         </span>
       </label>

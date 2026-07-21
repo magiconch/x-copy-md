@@ -8,6 +8,9 @@
   "contextMenu_copyAsMarkdown": {
     "message": "复制推文为 Markdown"
   },
+  "contextMenu_saveAsMarkdownFile": {
+    "message": "保存推文为 .md（下载）"
+  },
   "popup_title": {
     "message": "X 复制推文为 Markdown"
   },
@@ -15,10 +18,16 @@
     "message": "设置"
   },
   "popup_autoMarkdownCopy_label": {
-    "message": "Ctrl/Cmd+C 复制推文为 Markdown"
+    "message": "快捷键：默认复制 Ctrl/Cmd+C / 默认保存 Ctrl/Cmd+S"
   },
   "popup_autoMarkdownCopy_hint": {
-    "message": "按 Ctrl/Cmd+C 时，复制鼠标所在推文为 Markdown。"
+    "message": "默认操作为复制时使用 Ctrl/Cmd+C；默认操作为保存时使用 Ctrl/Cmd+S。"
+  },
+  "popup_defaultSaveMarkdownFile_hint": {
+    "message": "开启后，默认操作将保存 .md 到下载目录，而不是复制到剪贴板。"
+  },
+  "popup_defaultSaveMarkdownFile_label": {
+    "message": "默认操作：保存为 .md（下载）"
   },
   "popup_useLocalImages_label": {
     "message": "使用本地图片"

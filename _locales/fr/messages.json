@@ -8,6 +8,9 @@
   "contextMenu_copyAsMarkdown": {
     "message": "Copier le tweet en Markdown"
   },
+  "contextMenu_saveAsMarkdownFile": {
+    "message": "Save tweet as .md (Downloads)"
+  },
   "popup_title": {
     "message": "Copier un tweet X en Markdown"
   },
@@ -19,6 +22,12 @@
   },
   "popup_autoMarkdownCopy_hint": {
     "message": "Appuyez sur Ctrl/Cmd+C pour copier le tweet sous le curseur en Markdown."
+  },
+  "popup_defaultSaveMarkdownFile_hint": {
+    "message": "When enabled, the main action saves a .md file instead of copying to clipboard."
+  },
+  "popup_defaultSaveMarkdownFile_label": {
+    "message": "Default action: save as .md (Downloads)"
   },
   "popup_useLocalImages_label": {
     "message": "Utiliser des images locales"

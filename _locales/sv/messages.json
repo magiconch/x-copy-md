@@ -8,6 +8,9 @@
   "contextMenu_copyAsMarkdown": {
     "message": "Kopiera inlägg som Markdown"
   },
+  "contextMenu_saveAsMarkdownFile": {
+    "message": "Save tweet as .md (Downloads)"
+  },
   "popup_title": {
     "message": "Kopiera X-inlägg som Markdown"
   },
@@ -19,6 +22,12 @@
   },
   "popup_autoMarkdownCopy_hint": {
     "message": "Tryck Ctrl/Cmd+C för att kopiera inlägget under markören som Markdown."
+  },
+  "popup_defaultSaveMarkdownFile_hint": {
+    "message": "When enabled, the main action saves a .md file instead of copying to clipboard."
+  },
+  "popup_defaultSaveMarkdownFile_label": {
+    "message": "Default action: save as .md (Downloads)"
   },
   "popup_useLocalImages_label": {
     "message": "Använd lokala bilder"

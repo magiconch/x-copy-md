@@ -7,6 +7,7 @@ A Chrome/Edge/Brave browser extension that lets you easily copy Twitter/X tweets
 ## Core Features
 
 - **Right-click to copy tweets as Markdown** - Right-click on any tweet on x.com/twitter.com to copy
+- **Save tweets as a Markdown file** - Enable "Default action: save as .md (Downloads)" to save `.md` files to `~/Downloads/X-Copy/md/`
 - **Perfect for Obsidian** - Generated Markdown can be pasted directly into Obsidian notes
 - **Local image storage** - Automatically downloads tweet images locally for perfect display in Obsidian
 - **Keyboard shortcut support** - Optional Ctrl/Cmd+C quick copy
@@ -24,7 +25,7 @@ Tweet with images (images automatically downloaded locally for offline viewing i
 ```md
 <tweet text>
 
-![](file:///Users/you/Downloads/X-Copy/username-1234567890-01.jpg)
+![](file:///Users/you/Downloads/X-Copy/img/username-1234567890-m01.jpg)
 
 — @username (https://x.com/username/status/1234567890)
 ```
@@ -42,7 +43,7 @@ Tweet with quoted content:
 — @username (https://x.com/username/status/1234567890)
 ```
 
-**Note**: Only the main tweet's images are downloaded to the `Downloads/X-Copy/` directory. Quoted tweet images (if any) remain as remote URLs.
+**Note**: Only the main tweet's images are downloaded to the `Downloads/X-Copy/img/` directory. Quoted tweet images (if any) remain as remote URLs.
 
 ## Why Perfect for Obsidian?
 
@@ -70,11 +71,13 @@ Tweet with quoted content:
 
 Click the extension icon to open the settings panel:
 
-- **Ctrl/Cmd+C copies tweet as Markdown**
-  - When enabled, pressing `Ctrl/Cmd+C` copies the tweet under your cursor as Markdown
-  - If you have text selected, default copy behavior is preserved (only selection is copied)
+- **Shortcut: Ctrl/Cmd+C (copy) / Ctrl/Cmd+S (save)**
+  - When enabled, uses `Ctrl/Cmd+C` if default action is copy, or `Ctrl/Cmd+S` if default action is save
+  - If you have text selected, default browser behavior is preserved
+- **Default action: save as .md (Downloads)**
+  - When enabled, the main action saves a `.md` file to `~/Downloads/X-Copy/md/` instead of copying to clipboard
 - **Use local images**
-  - When enabled, **main tweet** images are downloaded to `~/Downloads/X-Copy/`, Markdown uses `file://...` local paths
+  - When enabled, **main tweet** images are downloaded to `~/Downloads/X-Copy/img/`, Markdown uses `file://...` local paths
   - When disabled, images use remote `https://pbs.twimg.com/...` URLs and no downloads occur
 
 ## Troubleshooting

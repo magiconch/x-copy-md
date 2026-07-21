@@ -30,6 +30,33 @@ function parseTweetUrl(_input: unknown): ParsedTweetUrl | null {
   return { username, id, url: u.toString() };
 }
 
+function selectCanonicalStatusUrl(_args: { hrefs?: unknown; baseUrl?: unknown; statusId?: unknown }): string | null {
+  const hrefs = Array.isArray(_args?.hrefs) ? (_args as any).hrefs : [];
+  const baseUrl = String((_args as any)?.baseUrl ?? "");
+  const statusId = String((_args as any)?.statusId ?? "").trim();
+  if (!baseUrl) return null;
+
+  for (const href of hrefs) {
+    const s = String(href ?? "").trim();
+    if (!s) continue;
+    let abs: URL;
+    try {
+      abs = new URL(s, baseUrl);
+    } catch {
+      continue;
+    }
+    abs.search = "";
+    abs.hash = "";
+    // X uses reserved /i/... routes (e.g. /i/web/status/...). Prefer the public /:user/status/:id form.
+    if (abs.pathname.startsWith("/i/")) continue;
+    const parsed = parseTweetUrl(abs.toString());
+    if (!parsed?.url) continue;
+    if (statusId && String(parsed.id) !== statusId) continue;
+    return parsed.url;
+  }
+  return null;
+}
+
 function buildTweetMarkdown(_args: { text?: unknown; username?: unknown; url?: unknown }): string {
   const text = String(_args?.text ?? "").trim();
   const username = String(_args?.username ?? "").replace(/^@/, "");
@@ -93,6 +120,73 @@ function cleanXTitle(raw: unknown): string {
   return t.trim();
 }
 
+function filenameSnippet(raw: unknown, maxLen = 60): string {
+  const n = Math.max(10, Math.min(120, Number(maxLen) || 60));
+  let s = String(raw ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Remove obvious URLs to keep filenames readable.
+  s = s.replace(/\bhttps?:\/\/\S+/gi, "").replace(/\s+/g, " ").trim();
+  if (!s) return "";
+
+  // Keep the "first few words": truncate but avoid cutting in the middle of a surrogate pair.
+  if (s.length <= n) return s;
+  s = s.slice(0, n).trim();
+  return s;
+}
+
+function normalizeArticleMarkdownText(raw: unknown): string {
+  return String(raw ?? "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\r\n?/g, "\n")
+    // Draft.js text nodes can contain authored paragraph breaks. Normalize
+    // horizontal whitespace without flattening those breaks.
+    .split("\n")
+    .map((line) => line.replace(/[\t\f\v ]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function formatArticleTextBlock(_args: {
+  tagName?: unknown;
+  className?: unknown;
+  parentTagName?: unknown;
+  text?: unknown;
+}): string {
+  const text = normalizeArticleMarkdownText(_args?.text);
+  if (!text) return "";
+
+  const tag = String(_args?.tagName ?? "").toUpperCase();
+  const parentTag = String(_args?.parentTagName ?? "").toUpperCase();
+  const cls = String(_args?.className ?? "");
+
+  if (tag === "H1" || /\blongform-header-one\b/.test(cls)) return `# ${text}`;
+  if (tag === "H2" || /\blongform-header-two\b/.test(cls)) return `## ${text}`;
+  if (tag === "H3" || /\blongform-header-three\b/.test(cls)) return `### ${text}`;
+  if (tag === "H4") return `#### ${text}`;
+  if (tag === "H5") return `##### ${text}`;
+  if (tag === "H6") return `###### ${text}`;
+
+  if (tag === "LI" || /\blongform-(?:un)?ordered-list-item\b/.test(cls)) {
+    const depthMatch = cls.match(/\bpublic-DraftStyleDefault-depth(\d+)\b/);
+    const depth = Math.max(0, Number(depthMatch?.[1]) || 0);
+    const indent = "  ".repeat(depth);
+    const ordered = parentTag === "OL" || /\blongform-ordered-list-item\b/.test(cls);
+    return `${indent}${ordered ? "1." : "-"} ${text}`;
+  }
+
+  if (tag === "BLOCKQUOTE" || /\blongform-blockquote\b/.test(cls)) {
+    return text
+      .split("\n")
+      .map((line) => `> ${line}`.trimEnd())
+      .join("\n");
+  }
+
+  return text;
+}
+
 function buildTweetMarkdownFromBlocks(_args: {
   blocks?: TweetBlock[];
   username?: unknown;
@@ -138,11 +232,15 @@ function blockquoteMarkdown(md: unknown): string {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     parseTweetUrl,
+    selectCanonicalStatusUrl,
     buildTweetMarkdown,
     buildTweetMarkdownFromBlocks,
     filenameToFileUrl,
     inferImageExt,
     cleanXTitle,
+    filenameSnippet,
+    normalizeArticleMarkdownText,
+    formatArticleTextBlock,
     blockquoteMarkdown
   };
 }
@@ -151,11 +249,15 @@ if (typeof module !== "undefined" && module.exports) {
 if (typeof globalThis !== "undefined") {
   globalThis.XCopyMd = {
     parseTweetUrl,
+    selectCanonicalStatusUrl,
     buildTweetMarkdown,
     buildTweetMarkdownFromBlocks,
     filenameToFileUrl,
     inferImageExt,
     cleanXTitle,
+    filenameSnippet,
+    normalizeArticleMarkdownText,
+    formatArticleTextBlock,
     blockquoteMarkdown
   };
 }

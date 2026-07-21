@@ -8,6 +8,9 @@
   "contextMenu_copyAsMarkdown": {
     "message": "트윗을 Markdown으로 복사"
   },
+  "contextMenu_saveAsMarkdownFile": {
+    "message": "Save tweet as .md (Downloads)"
+  },
   "popup_title": {
     "message": "X 트윗을 Markdown으로 복사"
   },
@@ -19,6 +22,12 @@
   },
   "popup_autoMarkdownCopy_hint": {
     "message": "Ctrl/Cmd+C를 누르면 커서 아래의 트윗을 Markdown으로 복사합니다."
+  },
+  "popup_defaultSaveMarkdownFile_hint": {
+    "message": "When enabled, the main action saves a .md file instead of copying to clipboard."
+  },
+  "popup_defaultSaveMarkdownFile_label": {
+    "message": "Default action: save as .md (Downloads)"
   },
   "popup_useLocalImages_label": {
     "message": "로컬 이미지 사용"

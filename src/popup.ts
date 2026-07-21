@@ -3,6 +3,7 @@
 (() => {
 const DEFAULTS = {
   autoMarkdownCopy: false,
+  defaultSaveMarkdownFile: false,
   useLocalImages: true
 };
 
@@ -34,6 +35,7 @@ function setStatus(text, isError) {
 function getEls() {
   return {
     autoMarkdownCopy: document.getElementById("autoMarkdownCopy"),
+    defaultSaveMarkdownFile: document.getElementById("defaultSaveMarkdownFile"),
     useLocalImages: document.getElementById("useLocalImages")
   };
 }
@@ -63,11 +65,22 @@ async function init() {
   const els = getEls();
   const settings = await storageGet();
   els.autoMarkdownCopy.checked = Boolean(settings.autoMarkdownCopy);
+  els.defaultSaveMarkdownFile.checked = Boolean(settings.defaultSaveMarkdownFile);
   els.useLocalImages.checked = Boolean(settings.useLocalImages);
 
   els.autoMarkdownCopy.addEventListener("change", async () => {
     try {
       await storageSet({ autoMarkdownCopy: els.autoMarkdownCopy.checked });
+      setStatus(t("popup_status_saved") || "Saved");
+      setTimeout(() => setStatus(""), 800);
+    } catch (e) {
+      setStatus(e.message || String(e), true);
+    }
+  });
+
+  els.defaultSaveMarkdownFile.addEventListener("change", async () => {
+    try {
+      await storageSet({ defaultSaveMarkdownFile: els.defaultSaveMarkdownFile.checked });
       setStatus(t("popup_status_saved") || "Saved");
       setTimeout(() => setStatus(""), 800);
     } catch (e) {
